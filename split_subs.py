@@ -2,6 +2,7 @@ import json
 import os, os.path
 import re
 import itertools
+from utils import get_chunks_of_file
 
 def get_comment_files_in_folder(folder):
   files = []
@@ -27,12 +28,6 @@ if __name__ == '__main__':
 		with open(month_fname, 'r') as month_file:
 			print 'BEGINNING FILE: %s' % month_fname
 			i = 1
-			print 'READING CHUNK %d ...' % i, 
-			lines = month_file.readlines(int((1 << 31) - 1))
-			print ('DONE' if lines else 'END')
-			while lines:
-				save_lines(lines, i)
+			for lines in get_chunks_of_file(month_file, i):
 				i += 1
-				print 'READING CHUNK %d ...' % i, 
-				lines = month_file.readlines(int((1 << 31) - 1))
-				print ('DONE' if lines else 'END')
+				save_lines(lines, i)
