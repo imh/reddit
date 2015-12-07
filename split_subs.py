@@ -28,6 +28,6 @@ if __name__ == '__main__':
 		with open(month_fname, 'r') as month_file:
 			print 'BEGINNING FILE: %s' % month_fname
 			i = 1
-			for lines in get_chunks_of_file(month_file, i):
+			for lines in get_chunks_of_file(month_file, True):
 				i += 1
 				save_lines(lines, i)

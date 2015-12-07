@@ -1,18 +1,47 @@
+import json
 
-def get_chunks_of_file(f, chunk=None):
-  if chunk is not None:
-    print 'READING CHUNK %d ...' % chunk,
+def get_chunks_of_file(f, print_chunks=False):
   lines = f.readlines(int((1 <<31) - 1))
-  if chunk is not None:
-      print ('DONE' if lines else 'END')
   while lines:
-    yield lines
-    if chunk is not None:
-      chunk += 1
-      print 'READING CHUNK %d ...' % chunk,
-    lines = f.readlines(int((1 <<31) - 1))  
-    if chunk is not None:
-      print ('DONE' if lines else 'END')
+    next_lines = f.readlines(int((1 <<31) - 1))
+    yield(lines, bool(next_lines))
+    lines = next_lines
+
+def extract_relevant_fields(dct):
+  dct2 = {key:dct[key] for key in ['author', 'body', 'score', 'created_utc']}
+  dct2['children'] = []
+  return dct2
+
+def get_children_of(name, nodes, children_of):
+  """ Creates a dictionary from nodes with tree structure in the 'children'
+  fields based on the tree structure in 'children_of' with root at 'name'.
+  Will not terminate if 'children_of' contains cycles.
+  Will not be correct if 'children_of' is not tree structured.
+  """
+  children = []
+  for child_name in children_of[name]:
+    node = nodes[child_name]
+    node['children'] = get_children_of(child_name, nodes, children_of)
+    children.append(node)
+  return children
+
+def create_graph(lines):
+  nodes = {}
+  children_of = {}
+  link = None
+  for line in lines:
+    dct = json.loads(line)
+    name = dct['name']
+    parent = dct['parent']
+    nodes[name] = extract_relevant_fields(dct)
+    if parent.startswith('t3_'):
+      link = parent
+    children = children_of.get(parent, [])
+    children.append(name)
+    children_of[parent] = children
+  top_level = {'link':link}
+  top_level['children'] = get_children_of(link, nodes, children_of)
+  return top_level
 
 def tokenize_string(s, compiled=True):
   """Tokenized a string into a list of ASCII strings."""
