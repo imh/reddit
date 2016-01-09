@@ -1,11 +1,18 @@
 import json
+import os, shutil
 
-def get_chunks_of_file(f, print_chunks=False):
+def get_chunks_of_file(f):
   lines = f.readlines(int((1 <<31) - 1))
   while lines:
-    next_lines = f.readlines(int((1 <<31) - 1))
-    yield(lines, bool(next_lines))
-    lines = next_lines
+    yield lines
+    lines = f.readlines(int((1 <<31) - 1))
+
+def remake_folder(folder):
+  try:
+    os.mkdir(folder)
+  except OSError:
+    shutil.rmtree(folder)
+    os.mkdir(folder)
 
 def extract_relevant_fields(dct):
   dct2 = {key:dct[key] for key in ['author', 'body', 'score', 'created_utc']}
@@ -19,20 +26,19 @@ def get_children_of(name, nodes, children_of):
   Will not be correct if 'children_of' is not tree structured.
   """
   children = []
-  for child_name in children_of[name]:
+  for child_name in children_of.get(name,[]):
     node = nodes[child_name]
     node['children'] = get_children_of(child_name, nodes, children_of)
     children.append(node)
   return children
 
-def create_graph(lines):
+def create_graph(comments):
   nodes = {}
   children_of = {}
   link = None
-  for line in lines:
-    dct = json.loads(line)
+  for dct in comments:
     name = dct['name']
-    parent = dct['parent']
+    parent = dct['parent_id']
     nodes[name] = extract_relevant_fields(dct)
     if parent.startswith('t3_'):
       link = parent
